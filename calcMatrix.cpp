@@ -120,7 +120,7 @@ void getMatrixSqrt(double** src, int n, double** dst1, double** dst2)
 	double ans = 1.0;
 	while(ans > eps)
 	{
-		getMatrixEqual(Z, n, temp);
+		getMatrixEqual(Z, n, n, temp);
 		getMatrixInverse(Z, n, invZ);
 		getMatrixInverse(Y, n, invY);
 		for(i = 0; i < n; i++)
@@ -129,12 +129,12 @@ void getMatrixSqrt(double** src, int n, double** dst1, double** dst2)
 				Y[i][j] = (Y[i][j] + invZ[i][j]) / 2;
 				Z[i][j] = (Z[i][j] + invY[i][j]) / 2;
 			}
-	    getMatrixSubstract(Z, temp, n, temp1);
+	    getMatrixSubstract(Z, temp, n, n, temp1);
 		ans = fabs(getMatrixDet(temp1, n));
 	}
 
-	getMatrixEqual(Y, n, dst1);
-	getMatrixEqual(Z, n, dst2);
+	getMatrixEqual(Y, n, n, dst1);
+	getMatrixEqual(Z, n, n, dst2);
 
 	for(i = 0; i < n; i++)
 	{
@@ -143,23 +143,23 @@ void getMatrixSqrt(double** src, int n, double** dst1, double** dst2)
 	delete[] Y, Z, invY, invZ, temp, temp1;
 }
 
-void getMatrixSubstract(double** src1, double** src2, int n, double** dst)
+void getMatrixSubstract(double** src1, double** src2, int m, int n, double** dst)
 {
-	for(int i = 0; i < n; i++)
+	for(int i = 0; i < m; i++)
 		for(int j =0; j < n; j++)
 			dst[i][j] = src1[i][j] - src2[i][j];
 }
 
-void getMatrixAdd(double** src1, double** src2, int n, double** dst)
+void getMatrixAdd(double** src1, double** src2, int m, int n, double** dst)
 {
-	for(int i = 0; i < n; i++)
+	for(int i = 0; i < m; i++)
 		for(int j = 0; j < n; j++)
 			dst[i][j] = src1[i][j] + src2[i][j];
 }
 
-void getMatrixEqual(double **src, int n, double** dst)
+void getMatrixEqual(double **src, int m, int n, double** dst)
 {
-	for(int i = 0; i < n; i++)
+	for(int i = 0; i < m; i++)
 		for(int j = 0; j < n; j++)
 			dst[i][j] = src[i][j];
 }
@@ -224,6 +224,40 @@ double getVectorNorm(double* vec, int n)
 	for(int i = 0; i < n; i++)
 		elemSquare += vec[i] * vec[i];
 	return sqrt(elemSquare);
+}
+
+// bilinear interpolation
+// #include <iostream>
+// using namespace std;
+
+void getMatrixInterp2(double** src1, typePoint** src2, int m, int n, double** dst)
+{
+	for(int i = 0; i < m; i++)
+	{
+		for(int j = 0; j < n; j++)
+		{
+			typePoint uv = src2[i][j];
+			double u = uv.u;
+			double v = uv.v;
+			int u1 = floor(u);
+			int u2 = ceil(u);
+			int v1 = floor(v);
+			int v2 = ceil(v);
+			if(u1 >= 0 && v1 >= 0 && u2 < m && v2 < n)
+			{
+				if(u1 == u2 || v1 == v2)
+					dst[i][j] = (src1[u1][v1] + src1[u1][v2] 
+							+ src1[u2][v1] + src1[u2][v2]) / 4.0;
+				else
+					dst[i][j] = src1[u1][v1]*(u2 - u)*(v2 - v)
+						+ src1[u2][v1]*(u - u1)*(v2 - v)
+						+ src1[u1][v2]*(u2 - u)*(v - v1)
+						+ src1[u2][v2]*(u - u1)*(v-v1);
+			}
+			else
+				dst[i][j] = 0.0;
+		}
+	}
 }
 
 
